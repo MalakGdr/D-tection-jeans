@@ -204,6 +204,10 @@
 
         var formDataHistory = JSON.parse(localStorage.getItem('formDataHistory')) || {};
 
+        function generateUniqueId() {
+    return 'id_' + new Date().getTime(); // Génère un identifiant unique basé sur l'heure actuelle
+}
+
 function afficherValeur() {
     var texte = document.getElementById('textInput').value;
     var maintenant = new Date();
@@ -212,12 +216,14 @@ function afficherValeur() {
     var nombre = document.getElementById('object-count').innerText;
 
     var formData = JSON.parse(localStorage.getItem('formData')) || [];
-    formData.unshift({ number: nombre, reference: texte, date: date, heure: heure });
+    var id = generateUniqueId(); // Génère un identifiant unique
+    formData.unshift({ id: id, number: nombre, reference: texte, date: date, heure: heure });
     localStorage.setItem('formData', JSON.stringify(formData));
 
     displayData(formData);
     document.getElementById('textInput').value = "";
 }
+
 
 function displayData(data) {
     var tableBody = document.getElementById('table-body');
@@ -234,23 +240,32 @@ function displayData(data) {
         html += '<button onclick="saveRow(' + index + ')" style="display:none;">Enregistrer</button>';
         html += '<button onclick="deleteRow(' + index + ')">Supprimer</button>';
         html += '</td>';
-        html += '<td>' + formatHistorique(formDataHistory[index]) + '</td>'; // Ajout de la cellule pour l'historique
+        html += '<td>' + formatHistorique(formDataHistory[item.id]) + '</td>'; // Utilisation de l'identifiant unique
         html += '</tr>';
     });
 
     tableBody.innerHTML = html;
 }
 
+
+
 function editRow(rowIndex) {
     var tableBody = document.getElementById('table-body');
     var row = tableBody.rows[rowIndex];
     
-    row.cells[0].innerHTML = '<input type="text" value="' + (rowIndex + 1) + '" id="editNumber_' + rowIndex + '">';
-    row.cells[1].innerHTML = '<input type="text" value="' + row.cells[1].innerText + '" id="editRef_' + rowIndex + '">';
+    // Récupère la valeur actuelle pour le champ nombre
+    var currentNumber = row.cells[0].innerText;
+    var currentRef = row.cells[1].innerText;
     
+    // Remplace les cellules avec des champs de saisie
+    row.cells[0].innerHTML = '<input type="text" value="' + currentNumber + '" id="editNumber_' + rowIndex + '">';
+    row.cells[1].innerHTML = '<input type="text" value="' + currentRef + '" id="editRef_' + rowIndex + '">';
+    
+    // Masquer le bouton Modifier et afficher le bouton Enregistrer
     row.querySelector('.edit-buttons button:nth-child(1)').style.display = 'none';
     row.querySelector('.edit-buttons button:nth-child(2)').style.display = 'inline-block';
 }
+
 
 function saveRow(rowIndex) {
     var tableBody = document.getElementById('table-body');
@@ -263,7 +278,7 @@ function saveRow(rowIndex) {
     var oldData = data[rowIndex]; // Récupérer les anciennes données
 
     // Sauvegarder les anciennes données dans l'historique avec la date et l'heure actuelles
-    formDataHistory[rowIndex] = {
+    formDataHistory[oldData.id] = {
         number: oldData.number,
         reference: oldData.reference,
         date: oldData.date,
@@ -288,17 +303,21 @@ function saveRow(rowIndex) {
     displayData(data);
 }
 
+
 function deleteRow(rowIndex) {
     var data = JSON.parse(localStorage.getItem('formData')) || [];
+    var id = data[rowIndex].id; // Obtenir l'identifiant de l'élément à supprimer
     data.splice(rowIndex, 1);
     localStorage.setItem('formData', JSON.stringify(data));
 
     // Supprimer l'historique correspondant
-    delete formDataHistory[rowIndex];
+    delete formDataHistory[id];
     localStorage.setItem('formDataHistory', JSON.stringify(formDataHistory));
 
     displayData(data);
 }
+
+
 
 function formatHistorique(historyData) {
     if (!historyData) {
@@ -307,6 +326,7 @@ function formatHistorique(historyData) {
 
     return `Ancienne valeur: ${historyData.number}, ${historyData.reference} (modifié le ${historyData.modificationDate} à ${historyData.modificationHeure})`;
 }
+
 
 document.addEventListener('DOMContentLoaded', function() {
     var data = JSON.parse(localStorage.getItem('formData')) || [];
